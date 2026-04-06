@@ -3,9 +3,10 @@
     <div class="container">
       <h1 class="page-title">Our Blog</h1>
       
-      <div v-if="pending" class="loading">Yükleniyor...</div>
+      <div v-if="status === 'pending'" class="loading">Yükleniyor...</div>
+      <div v-else-if="status === 'error' || error" class="loading" style="color: #d9534f;">Bir hata oluştu: {{ error?.message }}</div>
 
-      <div v-else class="carousel-wrapper">
+      <div v-else-if="status === 'success' && posts" class="carousel-wrapper">
         <button @click="scrollLeft" class="nav-btn left-btn">&#10094;</button>
         
         <div class="carousel-track" ref="carouselTrack" @wheel="handleWheel">
@@ -24,11 +25,20 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-
-const { data: posts, pending } = await useFetch('https://jsonplaceholder.typicode.com/posts?_limit=10')
-
 const carouselTrack = ref(null)
+
+// pick yerine "transform" kullanılarak SSR Payload diziler için optimize edildi
+const { data: posts, status, error } = await useApiFetch('/posts', {
+  key: 'index-posts',
+  query: { _limit: 10 },
+  transform: (response) => {
+    return response.map(post => ({
+      id: post.id,
+      title: post.title,
+      body: post.body
+    }))
+  }
+})
 
 const scrollLeft = () => {
   if (carouselTrack.value) {
@@ -51,88 +61,16 @@ const handleWheel = (e) => {
 </script>
 
 <style>
-body {
-  margin: 0;
-}
-
-.blog-section {
-  background-color: #e6ded8;
-  padding: 80px 0;
-  min-height: 100vh;
-  font-family: sans-serif;
-}
-
-.container {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 20px;
-}
-
-.page-title {
-  text-align: center;
-  color: #1a1a1a;
-  font-size: 40px;
-  margin-bottom: 60px;
-  padding-bottom: 20px;
-  position: relative;
-}
-
-.page-title::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 60px;
-  height: 2px;
-  background-color: #1a1a1a;
-}
-
-.carousel-wrapper {
-  display: flex;
-  align-items: center;
-  position: relative;
-}
-
-.carousel-track {
-  display: flex;
-  align-items: stretch;
-  overflow-x: auto;
-  scroll-behavior: smooth;
-  gap: 30px;
-  padding: 20px 0;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-
-.carousel-track::-webkit-scrollbar {
-  display: none;
-}
-
-.carousel-slide {
-  flex: 0 0 420px;
-  min-width: 420px;
-  display: flex;
-}
-
-.nav-btn {
-  background-color: transparent;
-  border: none;
-  font-size: 40px;
-  color: #1a1a1a;
-  cursor: pointer;
-  padding: 10px;
-  transition: transform 0.2s;
-  z-index: 2;
-}
-
-.nav-btn:hover {
-  transform: scale(1.2);
-}
-
-.loading {
-  text-align: center;
-  font-size: 24px;
-  color: #1a1a1a;
-}
+body { margin: 0; }
+.blog-section { background-color: #e6ded8; padding: 80px 0; min-height: 100vh; font-family: sans-serif; }
+.container { max-width: 1400px; margin: 0 auto; padding: 0 20px; }
+.page-title { text-align: center; color: #1a1a1a; font-size: 40px; margin-bottom: 60px; padding-bottom: 20px; position: relative; }
+.page-title::after { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 60px; height: 2px; background-color: #1a1a1a; }
+.carousel-wrapper { display: flex; align-items: center; position: relative; }
+.carousel-track { display: flex; align-items: stretch; overflow-x: auto; scroll-behavior: smooth; gap: 30px; padding: 20px 0; scrollbar-width: none; -ms-overflow-style: none; }
+.carousel-track::-webkit-scrollbar { display: none; }
+.carousel-slide { flex: 0 0 420px; min-width: 420px; display: flex; }
+.nav-btn { background-color: transparent; border: none; font-size: 40px; color: #1a1a1a; cursor: pointer; padding: 10px; transition: transform 0.2s; z-index: 2; }
+.nav-btn:hover { transform: scale(1.2); }
+.loading { text-align: center; font-size: 24px; color: #1a1a1a; }
 </style>

@@ -17,7 +17,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+// Import silindi (Madde 9)
 
 const props = defineProps({
   post: {
